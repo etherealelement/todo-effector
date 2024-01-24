@@ -1,9 +1,8 @@
-import {FC} from "react";
 import {useList, useUnit} from "effector-react";
 import {TodoListProps} from "./TodoList.props.ts";
 
 
-export const TodoList:FC = ({label, model}: TodoListProps) => {
+export const TodoList = ({label, model}: TodoListProps) => {
     const input = useUnit(model.$input);
     const todos = useList(model.$todos, (value: string, index: number) => (
         <li>
@@ -13,6 +12,8 @@ export const TodoList:FC = ({label, model}: TodoListProps) => {
             </button>
         </li>
     ))
+
+    console.log(todos);
 
 
     return <div>
