@@ -1,41 +1,66 @@
-import {createEvent, createStore, sample} from "effector";
+import React from "react";
+import { createStore, createEvent, sample, createEffect } from "effector";
+import { ITodo } from "./todos.interface";
+import { appStarted } from "../shared/init";
 
 function createTodoListApi(initial: string[] = []) {
-    // Events
-    const insert = createEvent();
-    const remove = createEvent();
-    const change = createEvent();
-    const reset = createEvent();
+  const insert = createEvent<string>();
+  const remove = createEvent<number>();
+  const change = createEvent<string>();
+  const reset = createEvent<void>();
 
-    // Stores
-    const $input = createStore<string>("");
-    const $todos = createStore<string[]>(initial)
-
-    $input.on(change, (_,value) => value);
-
-    $input.reset(insert);
-    $todos.on(insert, (todos, newTodo) => [...todos, newTodo]);
-    $todos.on(remove, (todos, index) => todos.filter((_,i) => i !== index));
-    $input.reset(reset);
+  const $input = createStore<string>("");
+  const $todos = createStore<string[]>(initial);
 
 
-    const submit = createEvent<React.SyntheticEvent>();
-    submit.watch((event) => event.preventDefault());
+  const fetchTodoFx = createEffect(async () => {
+    const response = await fetch("https://jsonplaceholder.typicode.com/todos/");
+    const dataTodo = await response.json();    
+    console.log(dataTodo)
+    return dataTodo
+  })
 
-    sample({
-        clock: submit,
-        source: $input,
-        target: insert,
-    });
+  
 
-    return {
-        submit,
-        remove,
-        change,
-        reset,
-        $todos,
-        $input,
-    };
+  $input.on(change, (_, value) => value);
+
+  $input.reset(insert);
+  $todos.on(insert, (todos, newTodo) => [...todos, newTodo]);
+  $todos.on(remove, (todos, index) => todos.filter((_, i) => i !== index));
+  
+  $input.reset(reset);
+
+
+
+  const submit = createEvent<React.SyntheticEvent>();
+  submit.watch((event) => event.preventDefault());
+  
+  sample({
+    clock: appStarted,
+    target: fetchTodoFx,
+  })
+  
+  sample({
+    clock: submit,
+    source: $input,
+    target: insert,
+  });
+
+  sample ({
+    clock: fetchTodoFx.doneData,
+    target: insert,
+  })
+
+
+
+  return {
+    submit,
+    remove,
+    change,
+    reset,
+    $todos,
+    $input,
+  };
 }
 
-export const todoList = createTodoListApi(["hello"]);
+export const firstTodoList = createTodoListApi([]);
