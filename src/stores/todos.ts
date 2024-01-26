@@ -3,30 +3,30 @@ import { createStore, createEvent, sample, createEffect } from "effector";
 import { ITodo } from "./todos.interface";
 import { appStarted } from "../shared/init";
 
-function createTodoListApi(initial: string[] = []) {
-  const insert = createEvent<string>();
+function createTodoListApi(initial: ITodo[]) {
+  const insert = createEvent<ITodo>();
   const remove = createEvent<number>();
   const change = createEvent<string>();
   const reset = createEvent<void>();
+  const setChecked = createEvent<number>();
 
   const $input = createStore<string>("");
-  const $todos = createStore<string[]>(initial);
+  const $todos = createStore(initial);
 
 
   const fetchTodoFx = createEffect(async () => {
-    const response = await fetch("https://jsonplaceholder.typicode.com/todos/");
+    const response = await fetch("https://jsonplaceholder.typicode.com/todos?_limit=10");
     const dataTodo = await response.json();    
-    console.log(dataTodo)
     return dataTodo
   })
 
   
 
   $input.on(change, (_, value) => value);
-
   $input.reset(insert);
-  $todos.on(insert, (todos, newTodo) => [...todos, newTodo]);
+  $todos.on(insert, (todos, newTodo) => [...todos, {id: Math.random() * 10 , title: newTodo, completed: false, userId: Math.random() * 10}]);
   $todos.on(remove, (todos, index) => todos.filter((_, i) => i !== index));
+  $todos.on(setChecked, (todos, id) => todos.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo))
   
   $input.reset(reset);
 
@@ -40,17 +40,16 @@ function createTodoListApi(initial: string[] = []) {
     target: fetchTodoFx,
   })
   
+  sample ({
+    clock: fetchTodoFx.doneData,
+    target: $todos,
+  })
+
   sample({
     clock: submit,
     source: $input,
     target: insert,
   });
-
-  sample ({
-    clock: fetchTodoFx.doneData,
-    target: insert,
-  })
-
 
 
   return {
@@ -58,6 +57,7 @@ function createTodoListApi(initial: string[] = []) {
     remove,
     change,
     reset,
+    setChecked,
     $todos,
     $input,
   };

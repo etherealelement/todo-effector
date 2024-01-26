@@ -8,6 +8,7 @@ import { appStarted } from './shared/init.ts'
 
 
 appStarted();
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
